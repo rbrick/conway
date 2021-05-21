@@ -1,0 +1,4 @@
+conway
+*.o
+*.a
+go.sum
