@@ -1,11 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"runtime"
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
+	"gonum.org/v1/gonum/mat"
 )
 
 const (
@@ -18,6 +20,20 @@ func init() {
 }
 
 func main() {
+
+	identity := mat.NewDense(4, 4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
+	})
+
+	array := make([]float64, 16)
+
+	matrixToArray(identity, array)
+
+	fmt.Println(array)
+
 	if err := glfw.Init(); err != nil {
 		log.Fatalln("failed to initialize:", err) // failed to initialize GLFW
 	}
