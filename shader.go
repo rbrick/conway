@@ -7,6 +7,41 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+//Program represents a GL Shader Program
+type Program struct {
+
+	// The GL ID for this program
+	Id uint32
+	// The Uniforms for this program
+	Uniforms map[string]*Uniform
+
+	// The shaders linked to this program
+	Shaders []*Shader
+}
+
+func (*Program) Attach(s *Shader) {
+
+}
+
+func (p *Program) Link() {
+	gl.LinkProgram(p.Id)
+}
+
+//NewProgram creates a new shader program
+func NewProgram() *Program {
+	return &Program{
+		Id:       gl.CreateProgram(),
+		Uniforms: map[string]*Uniform{},
+		Shaders:  []*Shader{},
+	}
+}
+
+type Shader struct {
+}
+
+func (*Shader) Compile() {
+}
+
 type Uniform struct {
 	Location int32
 }
