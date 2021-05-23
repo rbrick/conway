@@ -11,13 +11,26 @@ type Uniform struct {
 	Location int32
 }
 
-func (u *Uniform) Matrix4f(m mat.Matrix, transpose bool) {
+func (u *Uniform) Int(i int32) {
+	gl.Uniform1i(u.Location, i)
+}
+
+func (u *Uniform) Float(f float32) {
+	gl.Uniform1f(u.Location, f)
+}
+
+func (u *Uniform) Double(f float64) {
+	gl.Uniform1d(u.Location, f)
+}
+
+//Matrix puts a matrix as an uniform for a given shader
+func (u *Uniform) Matrix(m mat.Matrix, transpose bool) {
 	x, y := m.Dims()
 
 	matrix := make([]float64, x*y)
 
 	// store the matrix in the array
-	matrixToArray(m, matrix)
+	MatrixToArray(m, matrix)
 
 	if x == y {
 		switch x {
@@ -27,19 +40,6 @@ func (u *Uniform) Matrix4f(m mat.Matrix, transpose bool) {
 			gl.UniformMatrix3dv(u.Location, 9, transpose, &matrix[0])
 		case 4:
 			gl.UniformMatrix4dv(u.Location, 16, transpose, &matrix[0])
-		}
-	} else {
-		// TODO: support for non square matrices
-	}
-}
-
-func matrixToArray(m mat.Matrix, array []float64) {
-	r, c := m.Dims()
-
-	for i := 0; i < r; i++ {
-		row := mat.Row(nil, i, m)
-		for j := 0; j < c; j++ {
-			array[i+j*c] = row[j]
 		}
 	}
 }

@@ -21,16 +21,11 @@ func init() {
 
 func main() {
 
-	identity := mat.NewDense(4, 4, []float64{
-		1.0, 0.0, 0.0, 0.0,
-		0.0, 1.0, 0.0, 0.0,
-		0.0, 0.0, 1.0, 0.0,
-		0.0, 0.0, 0.0, 1.0,
-	})
+	identity := mat.NewDense(4, 4, IdentityMatrix4x4())
 
 	array := make([]float64, 16)
 
-	matrixToArray(identity, array)
+	MatrixToArray(identity, array)
 
 	fmt.Println(array)
 
@@ -64,6 +59,8 @@ func main() {
 	}
 
 	for !window.ShouldClose() {
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
