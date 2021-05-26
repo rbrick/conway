@@ -3,7 +3,12 @@
 package main
 
 import (
-	"github.com/go-gl/gl/v2.1/gl"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"strings"
+
+	"github.com/go-gl/gl/v3.2-core/gl"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -19,8 +24,31 @@ type Program struct {
 	Shaders []*Shader
 }
 
-func (*Program) Attach(s *Shader) {
+func (p *Program) GetUniform(name string) *Uniform {
+	if v, ok := p.Uniforms[name]; ok {
+		return v
+	}
 
+	v := gl.Str(name + "\x00")
+	location := gl.GetUniformLocation(p.Id, v)
+
+	uniform := &Uniform{
+		Location: location,
+	}
+
+	return uniform
+}
+
+func (p *Program) Bind() {
+	gl.UseProgram(p.Id)
+}
+
+func (p *Program) Unbind() {
+	gl.UseProgram(0)
+}
+
+func (p *Program) Attach(s *Shader) {
+	gl.AttachShader(p.Id, s.Id)
 }
 
 func (p *Program) Link() {
@@ -37,9 +65,47 @@ func NewProgram() *Program {
 }
 
 type Shader struct {
+	Id     uint32
+	Source string
+	Status int32 // the compile status of this shader
 }
 
-func (*Shader) Compile() {
+//ReadShader returns a compiled new shader & an error if anything fails for to
+// load or compile
+func ReadShader(reader io.Reader, shaderType uint32) (*Shader, error) {
+	shaderId := gl.CreateShader(shaderType)
+
+	data, err := ioutil.ReadAll(reader)
+
+	if err != nil {
+		return nil, err
+	}
+
+	source := string(data)
+	src, free := gl.Strs(string(data) + "\x00")
+
+	gl.ShaderSource(shaderId, 1, src, nil)
+	free()
+
+	gl.CompileShader(shaderId)
+
+	var status int32
+	gl.GetShaderiv(shaderId, gl.COMPILE_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetShaderiv(shaderId, gl.INFO_LOG_LENGTH, &logLength)
+
+		log := strings.Repeat("\x00", int(logLength+1))
+		gl.GetShaderInfoLog(shaderId, logLength, nil, gl.Str(log))
+
+		return &Shader{Status: status}, fmt.Errorf("failed to compile %v: %v", source, log)
+	}
+
+	return &Shader{
+		Id:     shaderId,
+		Source: source,
+		Status: status,
+	}, nil
 }
 
 type Uniform struct {
