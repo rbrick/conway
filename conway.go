@@ -90,10 +90,10 @@ func main() {
 		Components: []VertexComponent{PositionComponent},
 	})
 
-	angle := float32(20)
+	angle := float32(20.)
 	angleStep := float32(360. / angle)
 
-	for i := float32(0.); i <= angleStep; i += 1 {
+	for i := float32(0.); i <= angleStep; i += .1 {
 		rads := i * angle / 180.0 * float32(math.Pi)
 		x := float32(math.Cos(float64(rads))) * .85
 		y := float32(math.Sin(float64(rads))) * .85
@@ -122,28 +122,16 @@ func main() {
 
 		resolutionUniform := shaderProgram.GetUniform("iResolution")
 
-		// width, height := glfw.GetCurrentContext().GetFramebufferSize()
+		width, height := glfw.GetCurrentContext().GetFramebufferSize()
 
-		resolutionUniform.Vecf(float32(Width), float32(Height), 3)
-
-		// fmt.Println(.5 / float64(width))
+		resolutionUniform.Vecf(float32(width), float32(height), 3)
 
 		viewMatrix := shaderProgram.GetUniform("viewMatrix")
 
 		viewMatrix.Matrix(mat.NewDense(4, 4, IdentityMatrix4x4()), false)
 
-		// gl.LineWidth(1000)
-
-		gl.PointSize(5)
-
 		buf.Draw(gl.TRIANGLE_FAN)
 		buf.Unbind(gl.ARRAY_BUFFER)
-
-		// fmt.Println(int32(len(vertexData) / 3))
-		// fmt.Println("vertexData vertice count:", int32(len(vertexData)/3))
-
-		// gl.BindVertexArray(vao)
-		// gl.DrawArrays(gl.TRIANGLE_FAN, 0, int32(len(vertexData)/3))
 
 		shaderProgram.Unbind()
 
