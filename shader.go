@@ -124,11 +124,22 @@ func (u *Uniform) Double(f float64) {
 	gl.Uniform1d(u.Location, f)
 }
 
+func (u *Uniform) Vecf(vector ...float32) {
+	switch len(vector) {
+	case 2:
+		gl.Uniform2f(u.Location, vector[0], vector[1])
+	case 3:
+		gl.Uniform3f(u.Location, vector[0], vector[1], vector[2])
+	case 4:
+		gl.Uniform4f(u.Location, vector[0], vector[1], vector[2], vector[3])
+	}
+}
+
 //Matrix puts a matrix as an uniform for a given shader
 func (u *Uniform) Matrix(m mat.Matrix, transpose bool) {
 	x, y := m.Dims()
 
-	matrix := make([]float64, x*y)
+	matrix := make([]float32, x*y)
 
 	// store the matrix in the array
 	MatrixToArray(m, matrix)
@@ -136,11 +147,11 @@ func (u *Uniform) Matrix(m mat.Matrix, transpose bool) {
 	if x == y {
 		switch x {
 		case 2:
-			gl.UniformMatrix2dv(u.Location, 4, transpose, &matrix[0])
+			gl.UniformMatrix2fv(u.Location, 4, transpose, &matrix[0])
 		case 3:
-			gl.UniformMatrix3dv(u.Location, 9, transpose, &matrix[0])
+			gl.UniformMatrix3fv(u.Location, 9, transpose, &matrix[0])
 		case 4:
-			gl.UniformMatrix4dv(u.Location, 16, transpose, &matrix[0])
+			gl.UniformMatrix4fv(u.Location, 16, transpose, &matrix[0])
 		}
 	}
 }

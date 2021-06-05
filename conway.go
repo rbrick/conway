@@ -3,8 +3,10 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 	"github.com/go-gl/glfw/v3.2/glfw"
@@ -12,7 +14,7 @@ import (
 )
 
 const (
-	Width, Height = 800, 600
+	Width, Height = 800, 800
 )
 
 func init() {
@@ -24,7 +26,7 @@ func main() {
 
 	identity := mat.NewDense(4, 4, IdentityMatrix4x4())
 
-	array := make([]float64, 16)
+	array := make([]float32, 16)
 
 	MatrixToArray(identity, array)
 
@@ -40,6 +42,7 @@ func main() {
 	// set the version to OpenGL 3.2
 	glfw.WindowHint(glfw.ContextVersionMajor, 3)
 	glfw.WindowHint(glfw.ContextVersionMinor, 2)
+	glfw.WindowHint(glfw.Resizable, glfw.False)
 
 	// set it to the core profile
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
@@ -63,7 +66,7 @@ func main() {
 	fmt.Println("OpenGL version", version)
 
 	vsrc, _ := os.Open("vertexShader.glsl")
-	fsrc, _ := os.Open("fragmentShader.glsl")
+	fsrc, _ := os.Open("simple.glsl")
 
 	vertexShader, err := ReadShader(vsrc, gl.VERTEX_SHADER)
 
@@ -83,42 +86,82 @@ func main() {
 	shaderProgram.Attach(fragmentShader)
 	shaderProgram.Link()
 
-	buffer := CreateBuffer()
+	buf := CreateBuffer(BufferType{
+		Components: []VertexComponent{PositionComponent},
+	})
 
-	buffer.Vertex(NewVertex(-1, -1, 0))
-	buffer.Vertex(NewVertex(1, -1, 0))
-	buffer.Vertex(NewVertex(1, 1, 0))
-	buffer.Vertex(NewVertex(1, -1, 0))
+	angle := float32(20)
+	angleStep := float32(360. / angle)
 
-	// create a vao
+	for i := float32(0.); i <= angleStep; i += 1 {
+		rads := i * angle / 180.0 * float32(math.Pi)
+		x := float32(math.Cos(float64(rads))) * .85
+		y := float32(math.Sin(float64(rads))) * .85
 
-	var vao uint32
+		buf.Vertex(NewVertex(float32(x), float32(y), 0))
+	}
 
-	gl.GenVertexArrays(1, &vao)
-	gl.BindVertexArray(vao) // bind it
+	buf.Vertex(NewVertex(0, 0, 0))
 
-	buffer.Bind(gl.ARRAY_BUFFER) // bind as an array for this buffer
-	buffer.Upload(gl.ARRAY_BUFFER)
+	buf.Bind(gl.ARRAY_BUFFER)
+	buf.Upload(gl.ARRAY_BUFFER)
+	buf.Unbind(gl.ARRAY_BUFFER)
 
-	gl.VertexAttribPointer(0, 2, gl.FLOAT, false, 1, gl.PtrOffset(0))
-	// gl.EnableVertexArrayAttrib(vao, 0)
-	gl.EnableVertexAttribArray(0)
-
-	gl.BindVertexArray(0)
-	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	startTime := time.Now()
 
 	for !window.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		gl.ClearColor(1., 1, 1, 1.)
+
 		shaderProgram.Bind()
 
-		gl.BindVertexArray(vao)
-		gl.DrawArrays(gl.QUADS, 0, 4)
-		gl.BindVertexArray(0)
+		timeUniform := shaderProgram.GetUniform("iTime")
+
+		timeUniform.Float(float32(time.Since(startTime).Seconds()))
+
+		resolutionUniform := shaderProgram.GetUniform("iResolution")
+
+		// width, height := glfw.GetCurrentContext().GetFramebufferSize()
+
+		resolutionUniform.Vecf(float32(Width), float32(Height), 3)
+
+		// fmt.Println(.5 / float64(width))
+
+		viewMatrix := shaderProgram.GetUniform("viewMatrix")
+
+		viewMatrix.Matrix(mat.NewDense(4, 4, IdentityMatrix4x4()), false)
+
+		// gl.LineWidth(1000)
+
+		gl.PointSize(5)
+
+		buf.Draw(gl.TRIANGLE_FAN)
+		buf.Unbind(gl.ARRAY_BUFFER)
+
+		// fmt.Println(int32(len(vertexData) / 3))
+		// fmt.Println("vertexData vertice count:", int32(len(vertexData)/3))
+
+		// gl.BindVertexArray(vao)
+		// gl.DrawArrays(gl.TRIANGLE_FAN, 0, int32(len(vertexData)/3))
 
 		shaderProgram.Unbind()
 
 		window.SwapBuffers()
 		glfw.PollEvents()
 	}
+}
+
+func equalArray(a, b []float32) (int, bool) {
+	if len(b) != len(a) {
+		return -1, false
+	}
+
+	for i := 0; i < len(a); i++ {
+		if a[i] != b[i] {
+			return i, false
+		}
+	}
+
+	return len(a), true
 }
